@@ -1,0 +1,104 @@
+
+Can't enable PSRemoting?
+
+Assuming that the host you want to start trusting (and connect to) is giving you an IP address of 169.254.213.130, you add it like this:
+
+
+winrm set winrm/config/client '@{TrustedHosts="[169.254.213.130]"}'
+
+BEWARE of those weird clipboard symbol interpretation issues with Windows - a better bet 
+is to type into the shell manually instead of copying and pasting.
+
+
+Now, check your work:
+
+---------------------------------------------------
+winrm get winrm/config/client
+
+Client
+    NetworkDelayms = 5000
+    URLPrefix = wsman
+    AllowUnencrypted = false
+    Auth
+        Basic = true
+        Digest = true
+        Kerberos = true
+        Negotiate = true
+        Certificate = true
+        CredSSP = false
+    DefaultPorts
+        HTTP = 5985
+        HTTPS = 5986
+    TrustedHosts = [169.254.213.130]
+    
+    -----------------------------------------------
+    
+   
+ 
+ Also you might need to do this:
+ winrm set winrm/config/client '@{AllowUnencrypted="true"}'
+ 
+ 
+ 
+ However, when you run: 
+ 
+ Enter-PSSession -computerName <name-of-server>  
+ 
+ ...you get this error:
+ 
+ WinRM already is set up to receive requests on this machine.
+ Set-WSManQuickConfig : WinRM firewall exception will not work since one of the network connection types on this machine
+  is set to Public. Change the network connection type to either Domain or Private and try again.
+ At line:1 char:21
+ + Set-WSManQuickConfig <<<<
+     + CategoryInfo          : InvalidOperation: (:) [Set-WSManQuickConfig], InvalidOperationException
+    + FullyQualifiedErrorId : WsManError,Microsoft.WSMan.Management.SetWSManQuickConfigCommand
+    
+    
+    TO FIX THIS:
+    
+    Open Windows Poweshell ISE and copy the following crap into the IDE.  
+    Execute the commands by hittint F5 or File > Run.
+    
+    Nothing will appear to happen, that's normal.
+    
+    Save as a script called SetConnectionToBePrivate.ps1 and stash it somewhere, then exit the IDE.
+    
+    Now, enter the following in Powershell - notice that you get all the way through the dialog now:
+    
+    
+    -------------------------------------------
+    PS C:\> Enable-PSRemoting
+    
+    WinRM Quick Configuration
+    Running command "Set-WSManQuickConfig" to enable this machine for remote management through WinRM service.
+     This includes:
+        1. Starting or restarting (if already started) the WinRM service
+        2. Setting the WinRM service type to auto start
+        3. Creating a listener to accept requests on any IP address
+        4. Enabling firewall exception for WS-Management traffic (for http only).
+    
+    Do you want to continue?
+    [Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"): y
+    WinRM already is set up to receive requests on this machine.
+    WinRM already is set up for remote management on this machine.
+    
+    Confirm
+    Are you sure you want to perform this action?
+    Performing operation "Set-PSSessionConfiguration" on Target "Name: microsoft.powershell SDDL:
+    O:NSG:BAD:P(A;;GA;;;BA)S:P(AU;FA;GA;;;WD)(AU;SA;GXGW;;;WD). This will allow selected users to remotely run Windows
+    PowerShell commands on this computer".
+    [Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"): y
+    
+    Confirm
+    Are you sure you want to perform this action?
+    Performing operation "Registering session configuration" on Target "Session configuration "Microsoft.PowerShell32" is
+    not found. Running command "Register-PSSessionConfiguration Microsoft.PowerShell32 -processorarchitecture x86 -force"
+    to create "Microsoft.PowerShell32" session configuration. This will restart WinRM service.".
+    [Y] Yes  [A] Yes to All  [N] No  [L] No to All  [S] Suspend  [?] Help (default is "Y"): y
+    
+    --------------------------------------------
+    
+    Now try it:  
+    
+    Enter-PSSession -computerName <name-of-server>  
